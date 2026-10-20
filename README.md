@@ -1,10 +1,10 @@
 # YouTV
-# YouTV
 
 [![GitHub stars](https://img.shields.io/github/stars/DanDevProjects/youtv?style=flat)](https://github.com/USERNAME/REPOSITORY/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/DanDevProjects/youtv?style=flat)](https://github.com/USERNAME/REPOSITORY/network/members)
 [![GitHub issues](https://img.shields.io/github/issues/DanDevProjects/youtv?style=flat)](https://github.com/USERNAME/REPOSITORY/issues)
 [![License](https://img.shields.io/github/license/DanDevProjects/youtv?style=flat)](LICENSE)
+
 **A calmer way to explore YouTube.**
 
 YouTV is a lightweight YouTube browsing interface for people who want to find videos and channels without getting pulled into endless scrolling. It uses the **YouTube Data API** to search and browse content while keeping the experience focused on what you came to watch.

@@ -1,0 +1,1740 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101114">
+  <title>YouTV</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101114;
+      --surface: #191a1f;
+      --surface-hover: #24252b;
+      --text: #f5f5f7;
+      --muted: #a1a1aa;
+      --border: #303139;
+      --accent: #ff4545;
+      --danger: #ff7777;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: var(--text); background: var(--bg); }
+    button, input, select { font: inherit; }
+
+    body[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f5f5f7;
+      --surface: #fff;
+      --surface-hover: #ededf0;
+      --text: #19191d;
+      --muted: #666670;
+      --border: #dedee3;
+      --accent: #e32636;
+      --danger: #c62828;
+    }
+
+    body[data-theme="midnight"] {
+      --bg: #080b16;
+      --surface: #111729;
+      --surface-hover: #1b2439;
+      --text: #f2f5ff;
+      --muted: #a4aec3;
+      --border: #28324a;
+      --accent: #829bff;
+      --danger: #ff8f9b;
+    }
+
+    button:focus-visible, a:focus-visible, input:focus-visible,
+    select:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px clamp(12px, 3vw, 36px);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+      font-size: 21px;
+      font-weight: 750;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .logo-mark { color: var(--accent); }
+
+    .icon-button {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 auto;
+      place-items: center;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+    }
+
+    .icon-button:hover { background: var(--surface-hover); }
+
+    .search-form {
+      display: flex;
+      flex: 1;
+      max-width: 780px;
+      min-width: 0;
+      margin: 0 auto;
+    }
+
+    .search-form input,
+    .search-form button {
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+
+    .search-form input {
+      width: 100%;
+      min-width: 0;
+      padding: 11px 14px;
+      border-radius: 22px 0 0 22px;
+    }
+
+    .search-form button {
+      padding: 0 16px;
+      background: var(--surface-hover);
+      border-radius: 0 22px 22px 0;
+      cursor: pointer;
+    }
+
+    .app-layout {
+      display: grid;
+      grid-template-columns: 225px minmax(0, 1fr);
+      min-height: calc(100vh - 67px);
+      transition: grid-template-columns .2s ease;
+    }
+
+    body.sidebar-collapsed .app-layout { grid-template-columns: 0 minmax(0, 1fr); }
+
+    .sidebar {
+      position: sticky;
+      top: 67px;
+      align-self: start;
+      height: calc(100vh - 67px);
+      overflow: auto;
+      padding: 18px 12px;
+      border-right: 1px solid var(--border);
+    }
+
+    body.sidebar-collapsed .sidebar {
+      overflow: hidden;
+      padding: 0;
+      opacity: 0;
+      border: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-heading {
+      margin: 0 10px 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .category-list { display: grid; gap: 4px; }
+
+    .category-button {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 11px 12px;
+      color: var(--text);
+      text-align: left;
+      background: transparent;
+      border: 0;
+      border-radius: 9px;
+      cursor: pointer;
+    }
+
+    .category-button:hover,
+    .category-button.active { background: var(--surface-hover); }
+
+    .category-button.active { font-weight: 700; }
+    .category-icon { width: 22px; text-align: center; font-size: 18px; }
+
+    main {
+      width: min(1440px, 100%);
+      min-width: 0;
+      margin: 0 auto;
+      padding: 22px clamp(14px, 3vw, 40px) 50px;
+    }
+
+    #status { min-height: 20px; margin: 0 0 16px; color: var(--muted); }
+    #status.error { color: var(--danger); }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .filters label { color: var(--muted); font-size: 13px; }
+
+    .filters select {
+      padding: 9px 12px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 26px 0 15px;
+    }
+
+    .section-heading h1, .section-heading h2 { margin: 0; font-size: 20px; }
+
+    .text-button, .back-button {
+      padding: 9px 12px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .text-button:hover, .back-button:hover { background: var(--surface-hover); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: start;
+      gap: 24px 16px;
+    }
+
+    .card {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      padding: 0;
+      color: var(--text);
+      text-align: left;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+    }
+
+    .thumbnail-wrap {
+      overflow: hidden;
+      background: var(--surface);
+      border-radius: 10px;
+    }
+
+    .card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      transition: transform .2s;
+    }
+
+    .card:hover img { transform: scale(1.025); }
+
+    .card h2 {
+      display: -webkit-box;
+      min-height: 42px;
+      margin: 9px 0 5px;
+      overflow: hidden;
+      font-size: 15px;
+      line-height: 21px;
+      overflow-wrap: anywhere;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .card:hover h2 { color: var(--accent); }
+
+    .channel {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 13px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .channel-thumb-wrap {
+      width: min(150px, 70%);
+      margin: 0 auto;
+      border-radius: 50%;
+    }
+
+    .channel-thumb-wrap img {
+      aspect-ratio: 1;
+      border-radius: 50%;
+    }
+
+    .channel-thumb-wrap + h2,
+    .channel-thumb-wrap ~ .channel { text-align: center; }
+
+    .watch-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    #nowPlaying, #channelTitle {
+      margin: 0;
+      font-size: 19px;
+      overflow-wrap: anywhere;
+    }
+
+    #player {
+      width: min(100%, 960px);
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #000;
+      border-radius: 12px;
+    }
+
+    #player iframe { width: 100%; height: 100%; border: 0; }
+
+    .watch-actions { display: flex; gap: 9px; margin-top: 12px; }
+
+    .watch-actions a {
+      padding: 9px 12px;
+      color: var(--text);
+      text-decoration: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .watch-actions a:hover { background: var(--surface-hover); }
+    .empty-history { color: var(--muted); }
+
+    .load-more {
+      display: block;
+      margin: 24px auto 0;
+      padding: 11px 18px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      cursor: pointer;
+    }
+
+    .load-more:hover { background: var(--surface-hover); }
+    .load-more:disabled { opacity: .55; cursor: wait; }
+
+    dialog {
+      width: min(520px, calc(100% - 28px));
+      max-height: min(85vh, 800px);
+      padding: 0;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 20px 70px #0008;
+    }
+
+    dialog::backdrop { background: #0009; backdrop-filter: blur(3px); }
+    .dialog-content { max-height: inherit; overflow: auto; padding: 22px; }
+
+    .dialog-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .dialog-heading h2 { margin: 0; font-size: 19px; }
+    .setting { display: grid; gap: 8px; margin: 16px 0; }
+    .setting label { color: var(--muted); font-size: 13px; }
+
+    .setting input, .setting select {
+      width: 100%;
+      padding: 11px 12px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .help-text, .about-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .about-copy + .about-copy { margin-top: 12px; }
+    .about-copy strong { color: var(--text); }
+
+    .about-panel {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .about-panel summary {
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+      list-style-position: inside;
+    }
+
+    .about-details { padding: 16px 2px 0; }
+    .about-details h3 { margin: 18px 0 7px; font-size: 14px; }
+    .about-details h3:first-child { margin-top: 0; }
+
+    .about-details ol, .about-details ul {
+      margin: 8px 0 0;
+      padding-left: 21px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .about-details a { color: var(--accent); overflow-wrap: anywhere; }
+
+    .dialog-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 9px;
+      margin-top: 20px;
+    }
+
+    .dialog-actions button {
+      padding: 10px 14px;
+      color: var(--text);
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .dialog-actions .primary {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    body.shorts-view .sidebar,
+    body.shorts-view main > :not(#watch),
+    body.shorts-view #nowPlaying,
+    body.shorts-view .watch-actions {
+      display: none !important;
+    }
+
+    body.shorts-view .app-layout { display: block; min-height: 0; }
+    body.shorts-view main { padding: 12px; }
+    body.shorts-view #watch { display: block; }
+    body.shorts-view .watch-toolbar { margin-bottom: 10px; }
+
+    body.shorts-view #player {
+      width: min(100%, 420px);
+      aspect-ratio: 9 / 16;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 1050px) {
+      .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .app-layout, body.sidebar-collapsed .app-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .sidebar {
+        position: static;
+        width: 100%;
+        height: auto;
+        padding: 10px 12px;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      body.sidebar-collapsed .sidebar { display: none; }
+      .category-list { display: flex; overflow-x: auto; padding-bottom: 3px; }
+      .category-button { width: auto; flex: 0 0 auto; }
+      .sidebar-heading { margin-bottom: 8px; }
+    }
+
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .topbar { gap: 7px; padding: 10px; }
+      .logo { gap: 5px; font-size: 18px; }
+      .search-form input { padding: 10px 8px; }
+      .search-form button { padding: 0 10px; }
+      .icon-button { width: 38px; height: 38px; }
+      .watch-toolbar { align-items: flex-start; flex-direction: column; }
+
+      body.shorts-view .watch-toolbar {
+        align-items: flex-start;
+        flex-direction: row;
+      }
+    }
+
+    @media (max-width: 350px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body data-theme="dark">
+  <header class="topbar">
+    <button class="icon-button" id="toggleSidebar" type="button"
+      aria-label="Hide or show categories" aria-expanded="true"
+      title="Hide or show categories">☰</button>
+
+    <a class="logo" href="#" id="homeLink" aria-label="YouTV home">
+      <span class="logo-mark">▶</span><span>YouTV</span>
+    </a>
+
+    <form class="search-form" id="searchForm">
+      <input id="query" type="search" placeholder="Search videos and channels"
+        aria-label="Search videos and channels" required>
+      <button type="submit" data-i18n="searchButton">Search</button>
+    </form>
+
+    <button class="icon-button" id="openSettings" type="button"
+      aria-label="Settings" title="Settings">⚙</button>
+  </header>
+
+  <div class="app-layout">
+    <aside class="sidebar" aria-label="Video categories">
+      <h2 class="sidebar-heading" data-i18n="explore">Explore</h2>
+      <nav class="category-list" id="categoryList"></nav>
+    </aside>
+
+    <main>
+      <p id="status" role="status" aria-live="polite" hidden></p>
+
+      <div class="filters" id="filters" hidden>
+        <label for="sortOrder" data-i18n="sortVideos">Sort videos</label>
+        <select id="sortOrder">
+          <option value="relevance" data-i18n="relevance">Relevance</option>
+          <option value="date" data-i18n="newest">Newest</option>
+          <option value="viewCount" data-i18n="mostViewed">Most viewed</option>
+          <option value="rating" data-i18n="topRated">Top rated</option>
+        </select>
+
+        <label for="durationFilter" data-i18n="duration">Duration</label>
+        <select id="durationFilter">
+          <option value="any" data-i18n="anyDuration">Any</option>
+          <option value="short" data-i18n="underFour">Under 4 minutes</option>
+          <option value="medium" data-i18n="fourToTwenty">4–20 minutes</option>
+          <option value="long" data-i18n="overTwenty">Over 20 minutes</option>
+        </select>
+      </div>
+
+      <section id="watch" hidden>
+        <div class="watch-toolbar">
+          <button class="back-button" id="backHome" type="button" data-i18n="homeBack">← Home</button>
+          <h1 id="nowPlaying"></h1>
+        </div>
+        <div id="player"></div>
+        <div class="watch-actions">
+          <a id="openOnYouTube" href="#" target="_blank" rel="noopener noreferrer"
+            data-i18n="openYouTube">Open on YouTube ↗</a>
+        </div>
+      </section>
+
+      <section id="channelView" hidden>
+        <div class="watch-toolbar">
+          <button class="back-button" id="backFromChannel" type="button"
+            data-i18n="backResults">← Back to results</button>
+          <h1 id="channelTitle"></h1>
+        </div>
+        <div id="channelVideos" class="grid"></div>
+        <button class="load-more" id="loadMoreChannelVideos" type="button" hidden
+          data-i18n="loadMoreVideos">Load more videos</button>
+      </section>
+
+      <section id="resultsSection" hidden>
+        <div class="section-heading">
+          <h2 id="resultsHeading" data-i18n="searchResults">Search results</h2>
+        </div>
+
+        <div id="results" class="grid"></div>
+
+        <section id="channelsSection" hidden>
+          <div class="section-heading">
+            <h2 data-i18n="channels">Channels</h2>
+          </div>
+          <div id="channelResults" class="grid"></div>
+        </section>
+
+        <button class="load-more" id="loadMoreSearch" type="button" hidden
+          data-i18n="loadMoreResults">Load more results</button>
+      </section>
+
+      <section id="historySection" aria-label="Watch history">
+        <div class="section-heading">
+          <h2 data-i18n="watchHistory">Watch history</h2>
+          <button class="text-button" id="clearHistory" type="button"
+            data-i18n="clearHistory">Clear history</button>
+        </div>
+        <div id="history" class="grid"></div>
+        <p id="emptyHistory" class="empty-history" hidden data-i18n="emptyHistory">
+          No watched videos yet.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="settingsDialog">
+    <form class="dialog-content" id="settingsForm">
+      <div class="dialog-heading">
+        <h2 data-i18n="settings">Settings</h2>
+        <button class="icon-button" id="closeSettings" type="button"
+          aria-label="Close settings">×</button>
+      </div>
+
+      <div class="setting">
+        <label for="language" data-i18n="language">Language</label>
+        <select id="language">
+          <option value="en">English</option>
+          <option value="zh-TW">繁體中文（台灣/香港）</option>
+          <option value="es">Español</option>
+        </select>
+      </div>
+
+      <div class="setting">
+        <label for="apiKey" data-i18n="apiKeyLabel">YouTube Data API key</label>
+        <input id="apiKey" type="password" placeholder="Paste your API key"
+          data-i18n-placeholder="apiKeyPlaceholder" autocomplete="off" required>
+        <p class="help-text" data-i18n="apiKeyHint">
+          Your key is stored in this browser. Restrict it in Google Cloud.
+          A public production site should use a secure backend.
+        </p>
+      </div>
+
+      <div class="setting">
+        <label for="theme" data-i18n="theme">Theme</label>
+        <select id="theme">
+          <option value="dark" data-i18n="darkTheme">Dark</option>
+          <option value="light" data-i18n="lightTheme">Light</option>
+          <option value="midnight" data-i18n="midnightTheme">Midnight</option>
+        </select>
+      </div>
+
+      <details class="about-panel">
+        <summary data-i18n="aboutSummary">About YouTV</summary>
+        <div class="about-details">
+          <h3 data-i18n="aboutProjectHeading">About this project</h3>
+          <p class="about-copy" data-i18n="aboutProject"></p>
+
+          <h3 data-i18n="authorHeading">Author</h3>
+          <p class="about-copy">
+            <strong>DanDevProjects</strong> ·
+            <a href="https://github.com/DanDevProjects" target="_blank"
+              rel="noopener noreferrer">github.com/DanDevProjects</a>
+          </p>
+
+          <h3 data-i18n="apiGuideHeading">How to get a YouTube API key</h3>
+          <ol>
+            <li data-i18n="apiStep1"></li>
+            <li data-i18n="apiStep2"></li>
+            <li data-i18n="apiStep3"></li>
+            <li data-i18n="apiStep4"></li>
+            <li data-i18n="apiStep5"></li>
+            <li data-i18n="apiStep6"></li>
+          </ol>
+          <p class="about-copy" style="margin-top:10px">
+            <a href="https://console.cloud.google.com/" target="_blank"
+              rel="noopener noreferrer" data-i18n="googleCloudLink">
+              Open Google Cloud Console ↗
+            </a>
+          </p>
+
+          <h3 data-i18n="limitationsHeading">Limitations and privacy</h3>
+          <ul>
+            <li data-i18n="limitation1"></li>
+            <li data-i18n="limitation2"></li>
+            <li data-i18n="limitation3"></li>
+            <li data-i18n="limitation4"></li>
+            <li data-i18n="limitation5"></li>
+          </ul>
+        </div>
+      </details>
+
+      <div class="dialog-actions">
+        <button id="clearKey" type="button" data-i18n="removeKey">Remove key</button>
+        <button class="primary" type="submit" data-i18n="saveSettings">Save settings</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const $ = selector => document.querySelector(selector);
+
+    const translations = {
+      en: {
+        explore: "Explore", videos: "Videos", channels: "Channels",
+        searchButton: "Search", searchPlaceholder: "Search videos and channels",
+        searchAria: "Search videos and channels",
+        sortVideos: "Sort videos", relevance: "Relevance", newest: "Newest",
+        mostViewed: "Most viewed", topRated: "Top rated", duration: "Duration",
+        anyDuration: "Any", underFour: "Under 4 minutes",
+        fourToTwenty: "4–20 minutes", overTwenty: "Over 20 minutes",
+        homeBack: "← Home", openYouTube: "Open on YouTube ↗",
+        backResults: "← Back to results", loadMoreVideos: "Load more videos",
+        searchResults: "Search results", loadMoreResults: "Load more results",
+        watchHistory: "Watch history", clearHistory: "Clear history",
+        emptyHistory: "No watched videos yet.", settings: "Settings",
+        closeSettings: "Close settings", language: "Language",
+        apiKeyLabel: "YouTube Data API key", apiKeyPlaceholder: "Paste your API key",
+        apiKeyHint: "Your key is stored in this browser. Restrict it in Google Cloud. A public production site should use a secure backend.",
+        theme: "Theme", darkTheme: "Dark", lightTheme: "Light",
+        midnightTheme: "Midnight", aboutSummary: "About YouTV",
+        aboutProjectHeading: "About this project",
+        aboutProject: "YouTV is a lightweight, community-minded YouTube browsing interface designed to make intentional viewing easier. It provides a simple way to find videos and channels without adding advertisements of its own, while keeping the experience focused and less conducive to endless scrolling. The goal is to preserve useful entertainment and learning content while encouraging more deliberate viewing.",
+        authorHeading: "Author", apiGuideHeading: "How to get a YouTube API key",
+        apiStep1: "Open Google Cloud Console and sign in with your Google account.",
+        apiStep2: "Create or select a Google Cloud project.",
+        apiStep3: "In APIs & Services → Library, find and enable YouTube Data API v3.",
+        apiStep4: "Open APIs & Services → Credentials, choose Create credentials, and create an API key.",
+        apiStep5: "Restrict the key to YouTube Data API v3 and, where possible, limit which websites or applications can use it.",
+        apiStep6: "Copy the key and paste it into the API key field in these settings.",
+        googleCloudLink: "Open Google Cloud Console ↗",
+        limitationsHeading: "Limitations and privacy",
+        limitation1: "YouTube Data API quotas, regional availability, and Google’s policies apply. Searches may fail when the API quota is exhausted.",
+        limitation2: "Videos and playback are provided by YouTube. Availability, restrictions, captions, and playback behavior are controlled by YouTube and each video’s owner.",
+        limitation3: "Search results do not always provide enough information to reliably identify Shorts or determine video duration.",
+        limitation4: "This app does not add its own advertisements, but YouTube may show ads or apply its own playback and account policies.",
+        limitation5: "The API key and watch history are stored in this browser’s local storage. Avoid using a personal or unrestricted key on a public website; a production deployment should keep credentials on a secure server.",
+        removeKey: "Remove key", saveSettings: "Save settings",
+        searchErrorNoKey: "Add your YouTube API key in Settings.",
+        searching: "Searching…", loadingMoreResults: "Loading more results…",
+        loadingUploads: "Loading channel videos…",
+        loadingMoreUploads: "Loading more channel videos…",
+        noVideos: "No videos found.", noChannels: "No channels found.",
+        noChannelVideos: "No public videos found for this channel.",
+        clearHistoryConfirm: "Clear all watch history?",
+        settingsSaved: "Settings saved.", untitled: "Untitled video",
+        categorySearch: "{category} videos", resultsFor: "Results for “{query}”",
+        playVideo: "Play {title}", apiError: "YouTube API error ({status})."
+      },
+      "zh-TW": {
+        explore: "探索", videos: "影片", channels: "頻道",
+        searchButton: "搜尋", searchPlaceholder: "搜尋影片與頻道",
+        searchAria: "搜尋影片與頻道",
+        sortVideos: "排序影片", relevance: "相關性", newest: "最新",
+        mostViewed: "觀看次數最多", topRated: "評分最高", duration: "影片長度",
+        anyDuration: "不限", underFour: "少於 4 分鐘",
+        fourToTwenty: "4–20 分鐘", overTwenty: "超過 20 分鐘",
+        homeBack: "← 首頁", openYouTube: "在 YouTube 開啟 ↗",
+        backResults: "← 返回搜尋結果", loadMoreVideos: "載入更多影片",
+        searchResults: "搜尋結果", loadMoreResults: "載入更多結果",
+        watchHistory: "觀看紀錄", clearHistory: "清除紀錄",
+        emptyHistory: "目前沒有觀看紀錄。", settings: "設定",
+        closeSettings: "關閉設定", language: "語言",
+        apiKeyLabel: "YouTube Data API 金鑰", apiKeyPlaceholder: "貼上 API 金鑰",
+        apiKeyHint: "金鑰會儲存在此瀏覽器中。請在 Google Cloud 限制金鑰。正式公開網站應使用安全的後端。",
+        theme: "主題", darkTheme: "深色", lightTheme: "淺色",
+        midnightTheme: "午夜", aboutSummary: "關於 YouTV",
+        aboutProjectHeading: "關於本專案",
+        aboutProject: "YouTV 是一個輕量、以社群為本的 YouTube 瀏覽介面，旨在讓使用者更容易有意識地選擇觀看內容。它提供簡潔的影片與頻道搜尋體驗，不額外加入廣告，並盡量避免讓使用者陷入無止盡的滑動。專案希望保留娛樂與學習內容的價值，同時鼓勵更有目的的觀看。",
+        authorHeading: "作者", apiGuideHeading: "如何取得 YouTube API 金鑰",
+        apiStep1: "前往 Google Cloud Console，並使用 Google 帳戶登入。",
+        apiStep2: "建立或選取一個 Google Cloud 專案。",
+        apiStep3: "在「API 和服務」→「程式庫」中，搜尋並啟用 YouTube Data API v3。",
+        apiStep4: "前往「API 和服務」→「憑證」，選擇建立憑證，並建立 API 金鑰。",
+        apiStep5: "將金鑰限制為只能使用 YouTube Data API v3，並盡可能限制可使用金鑰的網站或應用程式。",
+        apiStep6: "複製金鑰，並貼到此設定中的 API 金鑰欄位。",
+        googleCloudLink: "開啟 Google Cloud Console ↗",
+        limitationsHeading: "限制與隱私",
+        limitation1: "本服務受 YouTube Data API 配額、地區可用性及 Google 政策限制。API 配額用盡時，搜尋可能會失敗。",
+        limitation2: "影片與播放功能由 YouTube 提供。影片是否可用、播放限制、字幕及播放行為，皆由 YouTube 與影片擁有者決定。",
+        limitation3: "搜尋結果不一定提供足夠資訊，因此無法保證能正確辨識 Shorts 或取得影片長度。",
+        limitation4: "本應用程式不自行加入廣告，但 YouTube 仍可能顯示廣告，並套用其播放與帳戶政策。",
+        limitation5: "API 金鑰與觀看紀錄會儲存在此瀏覽器的本機儲存空間。請勿在公開網站使用個人或未受限制的金鑰；正式部署時應將憑證存放於安全的伺服器。",
+        removeKey: "移除金鑰", saveSettings: "儲存設定",
+        searchErrorNoKey: "請先在設定中加入 YouTube API 金鑰。",
+        searching: "搜尋中…", loadingMoreResults: "正在載入更多結果…",
+        loadingUploads: "正在載入頻道影片…",
+        loadingMoreUploads: "正在載入更多頻道影片…",
+        noVideos: "找不到影片。", noChannels: "找不到頻道。",
+        noChannelVideos: "此頻道沒有公開影片。",
+        clearHistoryConfirm: "要清除所有觀看紀錄嗎？",
+        settingsSaved: "設定已儲存。", untitled: "未命名影片",
+        categorySearch: "{category}影片", resultsFor: "「{query}」的搜尋結果",
+        playVideo: "播放「{title}」", apiError: "YouTube API 錯誤（{status}）。"
+      },
+      es: {
+        explore: "Explorar", videos: "Videos", channels: "Canales",
+        searchButton: "Buscar", searchPlaceholder: "Buscar videos y canales",
+        searchAria: "Buscar videos y canales",
+        sortVideos: "Ordenar videos", relevance: "Relevancia",
+        newest: "Más recientes", mostViewed: "Más vistos",
+        topRated: "Mejor valorados", duration: "Duración",
+        anyDuration: "Cualquiera", underFour: "Menos de 4 minutos",
+        fourToTwenty: "4–20 minutos", overTwenty: "Más de 20 minutos",
+        homeBack: "← Inicio", openYouTube: "Abrir en YouTube ↗",
+        backResults: "← Volver a los resultados",
+        loadMoreVideos: "Cargar más videos",
+        searchResults: "Resultados de búsqueda",
+        loadMoreResults: "Cargar más resultados",
+        watchHistory: "Historial de reproducción",
+        clearHistory: "Borrar historial",
+        emptyHistory: "Todavía no hay videos vistos.", settings: "Configuración",
+        closeSettings: "Cerrar configuración", language: "Idioma",
+        apiKeyLabel: "Clave de YouTube Data API",
+        apiKeyPlaceholder: "Pega tu clave de API",
+        apiKeyHint: "La clave se guarda en este navegador. Restrínge su uso en Google Cloud. Un sitio público de producción debería usar un servidor seguro.",
+        theme: "Tema", darkTheme: "Oscuro", lightTheme: "Claro",
+        midnightTheme: "Medianoche", aboutSummary: "Acerca de YouTV",
+        aboutProjectHeading: "Acerca del proyecto",
+        aboutProject: "YouTV es una interfaz ligera y comunitaria para explorar YouTube, diseñada para facilitar una visualización más intencional. Permite encontrar videos y canales de forma sencilla sin añadir publicidad propia y procura evitar una experiencia centrada en el desplazamiento interminable. El objetivo es conservar el entretenimiento y el aprendizaje, fomentando al mismo tiempo un uso más consciente.",
+        authorHeading: "Autor", apiGuideHeading: "Cómo obtener una clave de YouTube API",
+        apiStep1: "Abre Google Cloud Console e inicia sesión con tu cuenta de Google.",
+        apiStep2: "Crea o selecciona un proyecto de Google Cloud.",
+        apiStep3: "En APIs y servicios → Biblioteca, busca y habilita YouTube Data API v3.",
+        apiStep4: "Ve a APIs y servicios → Credenciales, selecciona Crear credenciales y crea una clave de API.",
+        apiStep5: "Restringe la clave a YouTube Data API v3 y, si es posible, limita qué sitios web o aplicaciones pueden usarla.",
+        apiStep6: "Copia la clave y pégala en el campo correspondiente de esta configuración.",
+        googleCloudLink: "Abrir Google Cloud Console ↗",
+        limitationsHeading: "Limitaciones y privacidad",
+        limitation1: "Se aplican las cuotas de YouTube Data API, la disponibilidad regional y las políticas de Google. Las búsquedas pueden fallar si se agota la cuota.",
+        limitation2: "YouTube proporciona los videos y su reproducción. YouTube y cada propietario controlan la disponibilidad, las restricciones, los subtítulos y el funcionamiento de la reproducción.",
+        limitation3: "Los resultados de búsqueda no siempre incluyen información suficiente para identificar Shorts o conocer la duración con fiabilidad.",
+        limitation4: "Esta aplicación no añade publicidad propia, pero YouTube puede mostrar anuncios y aplicar sus políticas de reproducción y cuenta.",
+        limitation5: "La clave de API y el historial se guardan en el almacenamiento local de este navegador. Evita usar una clave personal o sin restricciones en un sitio público; una implementación de producción debería guardar las credenciales en un servidor seguro.",
+        removeKey: "Eliminar clave", saveSettings: "Guardar configuración",
+        searchErrorNoKey: "Añade tu clave de YouTube API en Configuración.",
+        searching: "Buscando…", loadingMoreResults: "Cargando más resultados…",
+        loadingUploads: "Cargando videos del canal…",
+        loadingMoreUploads: "Cargando más videos del canal…",
+        noVideos: "No se encontraron videos.",
+        noChannels: "No se encontraron canales.",
+        noChannelVideos: "Este canal no tiene videos públicos.",
+        clearHistoryConfirm: "¿Borrar todo el historial de reproducción?",
+        settingsSaved: "Configuración guardada.", untitled: "Video sin título",
+        categorySearch: "Videos de {category}",
+        resultsFor: "Resultados para “{query}”",
+        playVideo: "Reproducir {title}",
+        apiError: "Error de YouTube API ({status})."
+      }
+    };
+
+    const categories = [
+      { key: "home", icon: "⌂", query: "", id: "" },
+      { key: "gaming", icon: "🎮", query: "gaming gameplay", id: "20" },
+      { key: "news", icon: "📰", query: "news", id: "25" },
+      { key: "tech", icon: "💻", query: "technology tech", id: "28" },
+      { key: "music", icon: "🎵", query: "music", id: "10" },
+      { key: "sports", icon: "⚽", query: "sports", id: "17" },
+      { key: "education", icon: "📚", query: "education", id: "27" },
+      { key: "science", icon: "🔬", query: "science", id: "28" },
+      { key: "comedy", icon: "😂", query: "comedy", id: "23" },
+      { key: "film", icon: "🎬", query: "film animation", id: "1" },
+      { key: "travel", icon: "✈️", query: "travel", id: "19" },
+      { key: "food", icon: "🍳", query: "food cooking", id: "26" },
+      { key: "howto", icon: "🛠️", query: "how to tutorial", id: "26" }
+    ];
+
+    const categoryLabels = {
+      en: {
+        home: "Home", gaming: "Gaming", news: "News", tech: "Tech",
+        music: "Music", sports: "Sports", education: "Education",
+        science: "Science", comedy: "Comedy", film: "Film & Animation",
+        travel: "Travel", food: "Food", howto: "How-to"
+      },
+      "zh-TW": {
+        home: "首頁", gaming: "遊戲", news: "新聞", tech: "科技",
+        music: "音樂", sports: "體育", education: "教育",
+        science: "科學", comedy: "喜劇", film: "電影與動畫",
+        travel: "旅遊", food: "美食", howto: "教學"
+      },
+      es: {
+        home: "Inicio", gaming: "Videojuegos", news: "Noticias",
+        tech: "Tecnología", music: "Música", sports: "Deportes",
+        education: "Educación", science: "Ciencia", comedy: "Comedia",
+        film: "Cine y animación", travel: "Viajes", food: "Comida",
+        howto: "Tutoriales"
+      }
+    };
+
+    const dialog = $("#settingsDialog");
+    const apiKeyInput = $("#apiKey");
+    const themeSelect = $("#theme");
+    const languageSelect = $("#language");
+    const queryInput = $("#query");
+    const statusEl = $("#status");
+    const filtersEl = $("#filters");
+    const resultsSectionEl = $("#resultsSection");
+    const resultsEl = $("#results");
+    const channelsSectionEl = $("#channelsSection");
+    const channelResultsEl = $("#channelResults");
+    const watchEl = $("#watch");
+    const playerEl = $("#player");
+    const channelViewEl = $("#channelView");
+    const channelVideosEl = $("#channelVideos");
+    const historySectionEl = $("#historySection");
+    const historyEl = $("#history");
+    const emptyHistoryEl = $("#emptyHistory");
+    const searchMoreButton = $("#loadMoreSearch");
+    const channelMoreButton = $("#loadMoreChannelVideos");
+
+    let currentLanguage = localStorage.getItem("youTVLanguage") || "en";
+
+    const state = {
+      searchQuery: "",
+      searchCategoryId: "",
+      searchPageToken: "",
+      searchRequestId: 0,
+      searchMode: "video",
+      channelId: "",
+      channelTitle: "",
+      channelUploadsId: "",
+      channelPageToken: "",
+      channelRequestId: 0,
+      channelLoading: false,
+      searchLoading: false
+    };
+
+    function t(key, replacements = {}) {
+      const dictionary = translations[currentLanguage] || translations.en;
+      let text = dictionary[key] ?? translations.en[key] ?? key;
+
+      for (const [name, value] of Object.entries(replacements)) {
+        text = text.replaceAll(`{${name}}`, String(value));
+      }
+
+      return text;
+    }
+
+    function applyLanguage(language) {
+      currentLanguage = translations[language] ? language : "en";
+      localStorage.setItem("youTVLanguage", currentLanguage);
+      document.documentElement.lang = currentLanguage;
+
+      document.querySelectorAll("[data-i18n]").forEach(element => {
+        element.textContent = t(element.dataset.i18n);
+      });
+
+      document.querySelectorAll("[data-i18n-placeholder]").forEach(element => {
+        element.placeholder = t(element.dataset.i18nPlaceholder);
+      });
+
+      queryInput.setAttribute("aria-label", t("searchAria"));
+      $("#homeLink").setAttribute("aria-label", "YouTV");
+      $("#openSettings").setAttribute("aria-label", t("settings"));
+      $("#closeSettings").setAttribute("aria-label", t("closeSettings"));
+
+      renderCategories();
+      renderHistory();
+
+      if (state.searchQuery && !resultsSectionEl.hidden) {
+        $("#resultsHeading").textContent =
+          state.searchMode === "category"
+            ? t("categorySearch", {
+                category: getCurrentCategoryLabel() || state.searchQuery
+              })
+            : t("resultsFor", { query: state.searchQuery });
+      }
+    }
+
+    function getCurrentCategoryLabel() {
+      const category = categories.find(item => item.id === state.searchCategoryId);
+      return category ? categoryLabels[currentLanguage]?.[category.key] : "";
+    }
+
+    function setStatus(message = "", isError = false) {
+      statusEl.textContent = message;
+      statusEl.hidden = !message;
+      statusEl.classList.toggle("error", isError);
+    }
+
+    function cleanTitle(value = "") {
+      const decoder = document.createElement("textarea");
+      decoder.innerHTML = String(value);
+      return decoder.value
+        .replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, "")
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function cleanChannelName(value = "") {
+      return String(value)
+        .replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function renderCategories() {
+      const list = $("#categoryList");
+      list.replaceChildren();
+
+      for (const category of categories) {
+        const label = categoryLabels[currentLanguage]?.[category.key]
+          || categoryLabels.en[category.key];
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "category-button";
+        button.dataset.category = category.key;
+
+        const icon = document.createElement("span");
+        icon.className = "category-icon";
+        icon.textContent = category.icon;
+
+        const text = document.createElement("span");
+        text.textContent = label;
+
+        button.append(icon, text);
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".category-button").forEach(item => {
+            item.classList.toggle("active", item === button);
+          });
+
+          if (category.key === "home") {
+            showHomepage();
+            return;
+          }
+
+          queryInput.value = category.query;
+          state.searchQuery = category.query;
+          state.searchCategoryId = category.id;
+          state.searchMode = "category";
+          runVideoSearch({ reset: true });
+        });
+
+        list.append(button);
+      }
+
+      if (!state.searchCategoryId) {
+        list.querySelector('[data-category="home"]')?.classList.add("active");
+      } else {
+        const activeCategory = categories.find(
+          item => item.id === state.searchCategoryId && item.key !== "home"
+        );
+        if (activeCategory) {
+          list.querySelector(`[data-category="${activeCategory.key}"]`)
+            ?.classList.add("active");
+        }
+      }
+    }
+
+    function getHistory() {
+      try {
+        const data = JSON.parse(localStorage.getItem("youTVHistory") || "[]");
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveHistory(items) {
+      localStorage.setItem("youTVHistory", JSON.stringify(items));
+    }
+
+    function createThumbnail(video) {
+      const wrap = document.createElement("div");
+      wrap.className = "thumbnail-wrap";
+
+      const image = document.createElement("img");
+      image.src = video.thumbnail || "";
+      image.alt = "";
+      image.loading = "lazy";
+      image.onerror = () => {
+        image.onerror = null;
+        if (video.id) {
+          image.src = `https://i.ytimg.com/vi/${encodeURIComponent(video.id)}/mqdefault.jpg`;
+        }
+      };
+
+      wrap.append(image);
+      return wrap;
+    }
+
+    function createVideoCard(video) {
+      const safeVideo = {
+        ...video,
+        title: cleanTitle(video.title || t("untitled")),
+        channel: cleanChannelName(video.channel || "")
+      };
+
+      const card = document.createElement("button");
+      card.className = "card";
+      card.type = "button";
+      card.setAttribute("aria-label", t("playVideo", { title: safeVideo.title }));
+
+      const title = document.createElement("h2");
+      title.textContent = safeVideo.title;
+
+      const channel = document.createElement("div");
+      channel.className = "channel";
+      channel.textContent = safeVideo.channel;
+
+      card.append(createThumbnail(safeVideo), title, channel);
+      card.addEventListener("click", () => playVideo(safeVideo));
+      return card;
+    }
+
+    function normalizeVideo(item, fallbackChannel = "", fallbackChannelId = "") {
+      const snippet = item.snippet || {};
+      const id = item.id?.videoId || item.contentDetails?.videoId;
+      if (!id) return null;
+
+      return {
+        id,
+        title: cleanTitle(snippet.title || t("untitled")),
+        channel: cleanChannelName(
+          snippet.videoOwnerChannelTitle ||
+          snippet.channelTitle ||
+          fallbackChannel
+        ),
+        channelId:
+          snippet.videoOwnerChannelId ||
+          snippet.channelId ||
+          fallbackChannelId,
+        thumbnail:
+          snippet.thumbnails?.high?.url ||
+          snippet.thumbnails?.medium?.url ||
+          snippet.thumbnails?.default?.url ||
+          `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg`
+      };
+    }
+
+    function normalizeChannel(item) {
+      const snippet = item.snippet || {};
+      const id = item.id?.channelId || item.id;
+      if (!id) return null;
+
+      return {
+        id,
+        title: cleanChannelName(snippet.title || ""),
+        description: cleanChannelName(snippet.description || ""),
+        thumbnail:
+          snippet.thumbnails?.high?.url ||
+          snippet.thumbnails?.medium?.url ||
+          snippet.thumbnails?.default?.url ||
+          ""
+      };
+    }
+
+    function createChannelCard(channel) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "card";
+      card.setAttribute("aria-label", channel.title);
+
+      const wrap = document.createElement("div");
+      wrap.className = "thumbnail-wrap channel-thumb-wrap";
+
+      const image = document.createElement("img");
+      image.src = channel.thumbnail;
+      image.alt = "";
+      image.loading = "lazy";
+
+      const title = document.createElement("h2");
+      title.textContent = channel.title;
+
+      const description = document.createElement("div");
+      description.className = "channel";
+      description.textContent = channel.description;
+
+      wrap.append(image);
+      card.append(wrap, title, description);
+      card.addEventListener("click", () => openChannel(channel));
+      return card;
+    }
+
+    function renderHistory() {
+      const items = getHistory();
+      historyEl.replaceChildren();
+      emptyHistoryEl.hidden = items.length > 0;
+
+      for (const video of items) {
+        historyEl.append(createVideoCard(video));
+      }
+    }
+
+    function showHomepage() {
+      document.body.classList.remove("shorts-view");
+      state.searchRequestId++;
+      state.channelRequestId++;
+      state.searchLoading = false;
+      state.channelLoading = false;
+      state.searchMode = "video";
+      state.searchCategoryId = "";
+      state.searchQuery = "";
+      state.searchPageToken = "";
+      state.channelPageToken = "";
+      state.channelUploadsId = "";
+      queryInput.value = "";
+
+      watchEl.hidden = true;
+      channelViewEl.hidden = true;
+      resultsSectionEl.hidden = true;
+      filtersEl.hidden = true;
+      playerEl.replaceChildren();
+      searchMoreButton.hidden = true;
+      channelMoreButton.hidden = true;
+      channelsSectionEl.hidden = true;
+      setStatus("");
+
+      historySectionEl.hidden = false;
+      renderHistory();
+
+      document.querySelectorAll(".category-button").forEach(button => {
+        button.classList.toggle("active", button.dataset.category === "home");
+      });
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showNonHomepage() {
+      historySectionEl.hidden = true;
+    }
+
+    function showSearchView() {
+      showNonHomepage();
+      watchEl.hidden = true;
+      channelViewEl.hidden = true;
+      resultsSectionEl.hidden = false;
+      filtersEl.hidden = state.searchMode !== "video" &&
+        state.searchMode !== "category";
+      playerEl.replaceChildren();
+      document.body.classList.remove("shorts-view");
+    }
+
+    function playVideo(video) {
+      const safeVideo = {
+        ...video,
+        title: cleanTitle(video.title || t("untitled")),
+        channel: cleanChannelName(video.channel || "")
+      };
+
+      const isShort =
+        Boolean(safeVideo.isShort) ||
+        Boolean(
+          Number.isFinite(Number(safeVideo.durationSeconds)) &&
+          Number(safeVideo.durationSeconds) > 0 &&
+          Number(safeVideo.durationSeconds) <= 60
+        );
+
+      document.body.classList.toggle("shorts-view", isShort);
+
+      const history = getHistory().filter(item => item.id !== safeVideo.id);
+      history.unshift(safeVideo);
+      saveHistory(history.slice(0, 50));
+
+      showNonHomepage();
+      resultsSectionEl.hidden = true;
+      filtersEl.hidden = true;
+      channelViewEl.hidden = true;
+      setStatus("");
+
+      $("#nowPlaying").textContent = safeVideo.title;
+      $("#openOnYouTube").href =
+        `https://www.youtube.com/watch?v=${encodeURIComponent(safeVideo.id)}`;
+
+      playerEl.replaceChildren();
+
+      const iframe = document.createElement("iframe");
+      iframe.src =
+        `https://www.youtube-nocookie.com/embed/${encodeURIComponent(safeVideo.id)}?autoplay=1`;
+      iframe.title = safeVideo.title;
+      iframe.allow =
+        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+      iframe.allowFullscreen = true;
+      iframe.referrerPolicy = "strict-origin-when-cross-origin";
+
+      playerEl.append(iframe);
+      watchEl.hidden = false;
+      watchEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    async function apiGet(endpoint, params) {
+      const key = localStorage.getItem("youTVApiKey") || "";
+      if (!key) throw new Error(t("searchErrorNoKey"));
+
+      const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);
+
+      for (const [name, value] of Object.entries({ ...params, key })) {
+        if (value !== undefined && value !== null && value !== "") {
+          url.searchParams.set(name, String(value));
+        }
+      }
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error?.message || t("apiError", { status: response.status })
+        );
+      }
+
+      return data;
+    }
+
+    function getLanguageCode() {
+      return currentLanguage === "zh-TW" ? "zh-Hant" : currentLanguage;
+    }
+
+    function currentVideoSearchParams() {
+      const params = {
+        part: "snippet",
+        type: "video",
+        maxResults: 24,
+        q: state.searchQuery,
+        order: $("#sortOrder").value,
+        safeSearch: "moderate",
+        relevanceLanguage: getLanguageCode()
+      };
+
+      const duration = $("#durationFilter").value;
+      if (duration !== "any") params.videoDuration = duration;
+
+      if (state.searchMode === "category" && state.searchCategoryId) {
+        params.videoCategoryId = state.searchCategoryId;
+      }
+
+      return params;
+    }
+
+    async function runVideoSearch({ reset = true } = {}) {
+      if (!reset && state.searchLoading) return;
+
+      if (!localStorage.getItem("youTVApiKey")) {
+        dialog.showModal();
+        apiKeyInput.focus();
+        return;
+      }
+
+      state.searchMode =
+        state.searchMode === "category" ? "category" : "video";
+
+      const requestId = ++state.searchRequestId;
+      state.searchLoading = true;
+
+      if (reset) {
+        state.searchPageToken = "";
+        resultsEl.replaceChildren();
+        channelResultsEl.replaceChildren();
+        channelsSectionEl.hidden = true;
+
+        $("#resultsHeading").textContent =
+          state.searchMode === "category"
+            ? t("categorySearch", {
+                category: getCurrentCategoryLabel() || state.searchQuery
+              })
+            : t("resultsFor", { query: state.searchQuery });
+      }
+
+      showSearchView();
+      setStatus(reset ? t("searching") : t("loadingMoreResults"));
+      searchMoreButton.disabled = true;
+      searchMoreButton.hidden = true;
+
+      try {
+        const params = currentVideoSearchParams();
+        if (!reset && state.searchPageToken) {
+          params.pageToken = state.searchPageToken;
+        }
+
+        const data = await apiGet("search", params);
+        if (requestId !== state.searchRequestId) return;
+
+        state.searchPageToken = data.nextPageToken || "";
+
+        for (const item of data.items || []) {
+          const video = normalizeVideo(item);
+          if (video) resultsEl.append(createVideoCard(video));
+        }
+
+        setStatus(resultsEl.children.length ? "" : t("noVideos"));
+        searchMoreButton.hidden = !state.searchPageToken;
+      } catch (error) {
+        if (requestId === state.searchRequestId) setStatus(error.message, true);
+      } finally {
+        if (requestId === state.searchRequestId) {
+          state.searchLoading = false;
+          searchMoreButton.disabled = false;
+        }
+      }
+    }
+
+    async function searchVideosAndChannels() {
+      if (!localStorage.getItem("youTVApiKey")) {
+        dialog.showModal();
+        apiKeyInput.focus();
+        return;
+      }
+
+      const requestId = ++state.searchRequestId;
+      state.searchLoading = true;
+      state.searchMode = "mixed";
+      state.searchPageToken = "";
+      resultsEl.replaceChildren();
+      channelResultsEl.replaceChildren();
+      channelsSectionEl.hidden = true;
+
+      $("#resultsHeading").textContent = t("resultsFor", {
+        query: state.searchQuery
+      });
+
+      showSearchView();
+      filtersEl.hidden = true;
+      setStatus(t("searching"));
+      searchMoreButton.hidden = true;
+      searchMoreButton.disabled = true;
+
+      const commonParams = {
+        part: "snippet",
+        maxResults: 24,
+        q: state.searchQuery,
+        relevanceLanguage: getLanguageCode()
+      };
+
+      try {
+        const [videoData, channelData] = await Promise.all([
+          apiGet("search", {
+            ...commonParams,
+            type: "video",
+            order: $("#sortOrder").value,
+            safeSearch: "moderate"
+          }),
+          apiGet("search", {
+            ...commonParams,
+            type: "channel"
+          })
+        ]);
+
+        if (requestId !== state.searchRequestId) return;
+
+        for (const item of videoData.items || []) {
+          const video = normalizeVideo(item);
+          if (video) resultsEl.append(createVideoCard(video));
+        }
+
+        for (const item of channelData.items || []) {
+          const channel = normalizeChannel(item);
+          if (channel) channelResultsEl.append(createChannelCard(channel));
+        }
+
+        channelsSectionEl.hidden = channelResultsEl.children.length === 0;
+        state.searchPageToken = videoData.nextPageToken || "";
+        searchMoreButton.hidden = !state.searchPageToken;
+
+        if (resultsEl.children.length || channelResultsEl.children.length) {
+          setStatus("");
+        } else {
+          setStatus(t("noVideos"));
+        }
+      } catch (error) {
+        if (requestId === state.searchRequestId) {
+          setStatus(error.message, true);
+        }
+      } finally {
+        if (requestId === state.searchRequestId) {
+          state.searchLoading = false;
+          searchMoreButton.disabled = false;
+        }
+      }
+    }
+
+    async function loadMoreMixedVideos() {
+      if (!state.searchPageToken || state.searchLoading) return;
+
+      const requestId = ++state.searchRequestId;
+      state.searchLoading = true;
+      setStatus(t("loadingMoreResults"));
+      searchMoreButton.disabled = true;
+
+      try {
+        const params = {
+          part: "snippet",
+          type: "video",
+          maxResults: 24,
+          q: state.searchQuery,
+          order: $("#sortOrder").value,
+          safeSearch: "moderate",
+          relevanceLanguage: getLanguageCode(),
+          pageToken: state.searchPageToken
+        };
+
+        const duration = $("#durationFilter").value;
+        if (duration !== "any") params.videoDuration = duration;
+
+        const data = await apiGet("search", params);
+        if (requestId !== state.searchRequestId) return;
+
+        state.searchPageToken = data.nextPageToken || "";
+
+        for (const item of data.items || []) {
+          const video = normalizeVideo(item);
+          if (video) resultsEl.append(createVideoCard(video));
+        }
+
+        setStatus("");
+        searchMoreButton.hidden = !state.searchPageToken;
+      } catch (error) {
+        if (requestId === state.searchRequestId) setStatus(error.message, true);
+      } finally {
+        if (requestId === state.searchRequestId) {
+          state.searchLoading = false;
+          searchMoreButton.disabled = false;
+        }
+      }
+    }
+
+    async function openChannel(channel) {
+      state.channelRequestId++;
+      state.channelId = channel.id;
+      state.channelTitle = channel.title;
+      state.channelUploadsId = "";
+      state.channelPageToken = "";
+
+      showNonHomepage();
+      watchEl.hidden = true;
+      resultsSectionEl.hidden = true;
+      filtersEl.hidden = true;
+      channelViewEl.hidden = false;
+      channelVideosEl.replaceChildren();
+      $("#channelTitle").textContent = channel.title;
+      channelMoreButton.hidden = true;
+
+      await loadChannelVideos({ reset: true });
+    }
+
+    async function loadChannelVideos({ reset = false } = {}) {
+      if (state.channelLoading) return;
+
+      if (!localStorage.getItem("youTVApiKey")) {
+        dialog.showModal();
+        apiKeyInput.focus();
+        return;
+      }
+
+      const requestId = ++state.channelRequestId;
+      state.channelLoading = true;
+
+      if (reset) {
+        channelVideosEl.replaceChildren();
+        state.channelPageToken = "";
+      }
+
+      setStatus(reset ? t("loadingUploads") : t("loadingMoreUploads"));
+      channelMoreButton.disabled = true;
+      channelMoreButton.hidden = true;
+
+      try {
+        if (!state.channelUploadsId) {
+          if (state.channelId.startsWith("UC")) {
+            state.channelUploadsId = `UU${state.channelId.slice(2)}`;
+          } else {
+            throw new Error(t("noChannelVideos"));
+          }
+        }
+
+        const params = {
+          part: "snippet,contentDetails",
+          playlistId: state.channelUploadsId,
+          maxResults: 24
+        };
+
+        if (!reset && state.channelPageToken) {
+          params.pageToken = state.channelPageToken;
+        }
+
+        const playlistData = await apiGet("playlistItems", params);
+        if (requestId !== state.channelRequestId) return;
+
+        state.channelPageToken = playlistData.nextPageToken || "";
+
+        for (const item of playlistData.items || []) {
+          const videoId = item.snippet?.resourceId?.videoId;
+          if (!videoId) continue;
+
+          const video = normalizeVideo(
+            {
+              id: { videoId },
+              snippet: item.snippet
+            },
+            state.channelTitle,
+            state.channelId
+          );
+
+          if (video) {
+            video.channel = state.channelTitle;
+            video.channelId = state.channelId;
+            channelVideosEl.append(createVideoCard(video));
+          }
+        }
+
+        setStatus(channelVideosEl.children.length ? "" : t("noChannelVideos"));
+        channelMoreButton.hidden = !state.channelPageToken;
+      } catch (error) {
+        if (requestId === state.channelRequestId) setStatus(error.message, true);
+      } finally {
+        if (requestId === state.channelRequestId) {
+          state.channelLoading = false;
+          channelMoreButton.disabled = false;
+        }
+      }
+    }
+
+    $("#toggleSidebar").addEventListener("click", event => {
+      const collapsed = document.body.classList.toggle("sidebar-collapsed");
+      event.currentTarget.setAttribute("aria-expanded", String(!collapsed));
+      localStorage.setItem("youTVSidebarCollapsed", String(collapsed));
+    });
+
+    if (localStorage.getItem("youTVSidebarCollapsed") === "true") {
+      document.body.classList.add("sidebar-collapsed");
+      $("#toggleSidebar").setAttribute("aria-expanded", "false");
+    }
+
+    $("#searchForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const query = queryInput.value.trim();
+      if (!query) return;
+
+      state.searchQuery = query;
+      state.searchCategoryId = "";
+      state.searchMode = "mixed";
+
+      document.querySelectorAll(".category-button").forEach(button => {
+        button.classList.remove("active");
+      });
+
+      searchVideosAndChannels();
+    });
+
+    $("#sortOrder").addEventListener("change", () => {
+      if (state.searchQuery && state.searchMode === "video") {
+        runVideoSearch({ reset: true });
+      } else if (state.searchQuery && state.searchMode === "mixed") {
+        searchVideosAndChannels();
+      }
+    });
+
+    $("#durationFilter").addEventListener("change", () => {
+      if (state.searchQuery && state.searchMode === "video") {
+        runVideoSearch({ reset: true });
+      } else if (state.searchQuery && state.searchMode === "mixed") {
+        searchVideosAndChannels();
+      }
+    });
+
+    searchMoreButton.addEventListener("click", () => {
+      if (!state.searchPageToken || state.searchLoading) return;
+
+      if (state.searchMode === "mixed") {
+        loadMoreMixedVideos();
+      } else {
+        runVideoSearch({ reset: false });
+      }
+    });
+
+    channelMoreButton.addEventListener("click", () => {
+      if (state.channelPageToken && !state.channelLoading) {
+        loadChannelVideos({ reset: false });
+      }
+    });
+
+    $("#backFromChannel").addEventListener("click", () => {
+      state.channelRequestId++;
+      state.channelLoading = false;
+      channelViewEl.hidden = true;
+      resultsSectionEl.hidden = false;
+      filtersEl.hidden = state.searchMode === "video" ||
+        state.searchMode === "category" ? false : true;
+      setStatus("");
+    });
+
+    $("#backHome").addEventListener("click", showHomepage);
+
+    $("#homeLink").addEventListener("click", event => {
+      event.preventDefault();
+      showHomepage();
+    });
+
+    $("#clearHistory").addEventListener("click", () => {
+      if (!confirm(t("clearHistoryConfirm"))) return;
+      localStorage.removeItem("youTVHistory");
+      renderHistory();
+    });
+
+    $("#openSettings").addEventListener("click", () => {
+      apiKeyInput.value = localStorage.getItem("youTVApiKey") || "";
+      themeSelect.value = document.body.dataset.theme || "dark";
+      languageSelect.value = currentLanguage;
+      dialog.showModal();
+    });
+
+    $("#closeSettings").addEventListener("click", () => dialog.close());
+
+    $("#clearKey").addEventListener("click", () => {
+      localStorage.removeItem("youTVApiKey");
+      apiKeyInput.value = "";
+      apiKeyInput.focus();
+    });
+
+    themeSelect.addEventListener("change", () => {
+      document.body.dataset.theme = themeSelect.value;
+    });
+
+    languageSelect.addEventListener("change", () => {
+      applyLanguage(languageSelect.value);
+    });
+
+    $("#settingsForm").addEventListener("submit", event => {
+      event.preventDefault();
+
+      const key = apiKeyInput.value.trim();
+      if (!key) {
+        apiKeyInput.focus();
+        return;
+      }
+
+      localStorage.setItem("youTVApiKey", key);
+      localStorage.setItem("youTVTheme", themeSelect.value);
+      localStorage.setItem("youTVLanguage", languageSelect.value);
+
+      document.body.dataset.theme = themeSelect.value;
+      applyLanguage(languageSelect.value);
+      dialog.close();
+      setStatus(t("settingsSaved"));
+    });
+
+    document.body.dataset.theme = localStorage.getItem("youTVTheme") || "dark";
+    languageSelect.value = currentLanguage;
+    applyLanguage(currentLanguage);
+  </script>
+</body>
+</html>
